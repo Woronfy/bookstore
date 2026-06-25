@@ -2,56 +2,34 @@
 
 namespace App\Models;
 
+use App\Casts\PriceCast;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Support\Str;
+use Spatie\Sluggable\HasSlug;
+use Spatie\Sluggable\SlugOptions;
 
 class Book extends Model
 {
-    use HasFactory;
+    use HasFactory, HasSlug;
     
     protected $guarded = ['id', 'slug'];
-    
-     public function setTitleAttribute($value)
+
+    public function getSlugOptions(): SlugOptions
     {
-        $this->attributes['title'] = $value;
-        $this->attributes['slug'] = $this->generateUniqueSlug($value);
+        return SlugOptions::create()
+            ->generateSlugsFrom('title')
+            ->saveSlugsTo('slug')
+            ->doNotGenerateSlugsOnUpdate();
     }
 
-    private function generateUniqueSlug($title)
+    protected function casts(): array
     {
-        $slug = Str::slug($title);
-        $original = $slug;
-        $count = 1;
-        while (static::where('slug', $slug)->where('id', '!=', $this->id ?? 0)->exists()) {
-            $slug = $original . '-' . $count++;
-        }
-        return $slug;
-    }
-
-    private function toCents($value): ?int
-    {
-        if (is_null($value)) return null;
-        if (is_int($value)) return $value;
-        return (int) round($value * 100);
-    }
-
-    protected function price(): Attribute
-    {
-        return Attribute::make(
-            get: fn ($value) => $value / 100,
-            set: fn ($value) => $this->toCents($value),
-        );
-    }
-
-    protected function oldPrice(): Attribute
-    {
-        return Attribute::make(
-            get: fn ($value) => $value ? $value / 100 : null,
-            set: fn ($value) => $this->toCents($value),
-        );
+        return [
+            'price' => PriceCast::class,
+            'old_price' => PriceCast::class,
+        ];
     }
 
     public function authors(): BelongsToMany
@@ -61,5 +39,9 @@ class Book extends Model
     public function genres(): BelongsToMany
     {
         return $this->belongsToMany(Genre::class, 'book_genre');
+    }
+    public function favoritedBy(): BelongsToMany
+    {
+        return $this->belongsToMany(Author::class, 'favorites', 'book_id', 'author_id')->withTimestamps();
     }
 }

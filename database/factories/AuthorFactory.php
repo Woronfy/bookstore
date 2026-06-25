@@ -21,7 +21,8 @@ class AuthorFactory extends Factory
             'first_name' => $this->faker->firstName(),
             'last_name' => $this->faker->lastName(),
             'nickname' => $this->faker->unique()->userName(),
-            'email' => $this->faker->unique()->safeEmail()
+            'email' => $this->faker->unique()->safeEmail(),
+            'password' => static::$password ??= Hash::make('password')
         ];
     }
 }

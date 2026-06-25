@@ -5,29 +5,21 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Support\Str;
+use Spatie\Sluggable\HasSlug;
+use Spatie\Sluggable\SlugOptions;
 
 class Genre extends Model
 {
-    use HasFactory;
+    use HasFactory, HasSlug;
 
     protected $guarded = ['id', 'slug'];
     
-     public function setNameAttribute($value)
+     public function getSlugOptions(): SlugOptions
     {
-        $this->attributes['name'] = $value;
-        $this->attributes['slug'] = $this->generateUniqueSlug($value);
-    }
-
-    private function generateUniqueSlug($title)
-    {
-        $slug = Str::slug($title);
-        $original = $slug;
-        $count = 1;
-        while (static::where('slug', $slug)->where('id', '!=', $this->id ?? 0)->exists()) {
-            $slug = $original . '-' . $count++;
-        }
-        return $slug;
+        return SlugOptions::create()
+            ->generateSlugsFrom('name')
+            ->saveSlugsTo('slug')
+            ->doNotGenerateSlugsOnUpdate();
     }
 
     public function books(): BelongsToMany
