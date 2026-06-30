@@ -12,9 +12,9 @@ class AuthorController extends Controller
 {
     public function index(Request $request)
     {
-        $authors = Author::withCount('books')->with(['books'=>function ($query){
-            $query->latest('year')->limit(1);
-        }])->paginate(15);
+        $authors = app(AuthorRepository::class)->getPaginated(
+            $request->input('per_page', 15)
+        );
 
         return AuthorResource::collection($authors);
     }

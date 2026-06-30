@@ -22,9 +22,6 @@ class PriceCast implements CastsAttributes
             return null;
         }
 
-        if (is_int($value)) {
-            return $value;
-        }
         return (int) round($value * 100);
     }
 }

@@ -9,10 +9,6 @@ class AuthorRepository
 {
     public function getPaginated(int $perPage = 15): LengthAwarePaginator
     {
-        return Author::withCount('books')
-            ->with(['books' => function ($query) {
-                $query->latest('year')->limit(1);
-            }])
-            ->paginate($perPage);
+        return Author::withCount('books')->with(['latestBook', 'media'])->paginate($perPage);
     }
 }

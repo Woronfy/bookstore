@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\DTO\Auth\LoginDTO;
 
 class LoginRequest extends FormRequest
 {
@@ -19,12 +20,11 @@ class LoginRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
+    public function toDTO(): LoginDTO
     {
-        return [
-            'email.required' => trans('auth.registration.email.required'),
-            'email.email'    => trans('auth.registration.email.email'),
-            'password.required' => trans('auth.registration.password.required'),
-        ];
+        return new LoginDTO(
+            email: $this->validated('email'),
+            password: $this->validated('password'),
+        );
     }
 }

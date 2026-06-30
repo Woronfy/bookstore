@@ -16,13 +16,14 @@ class AuthorResource extends JsonResource
             'email' => $this->email,
             'nickname' => $this->nickname,
             'books_count' => $this->books_count,
-            'latest_book' => $this->whenLoaded('books', function () {
-                $book = $this->books->first();
-                return $book ? [
-                    'id' => $book->id,
-                    'title' => $book->title,
-                ]:null;
-            })
+            'avatar' => $this->getFirstMediaUrl('avatar', 'thumb') ?: null,
+            'latest_book' => $this->whenLoaded('latestBook', function () {
+                return [
+                    'id' => $this->latestBook->id,
+                    'title' => $this->latestBook->title,
+                    'year' => $this->latestBook->year,
+                ];
+            }),
         ];
     }
 }

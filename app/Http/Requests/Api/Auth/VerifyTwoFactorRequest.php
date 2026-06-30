@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\DTO\Auth\VerifyTwoFactorDTO;
 
 class VerifyTwoFactorRequest extends FormRequest
 {
@@ -19,13 +20,11 @@ class VerifyTwoFactorRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
+    public function toDTO(): VerifyTwoFactorDTO
     {
-        return [
-            'email.required' => trans('auth.registration.email.required'),
-            'email.email'    => trans('auth.registration.email.email'),
-            'code.required'  => 'Код подтверждения обязателен.',
-            'code.size'      => 'Код должен состоять из 4 символов.',
-        ];
+        return new VerifyTwoFactorDTO(
+            email: $this->validated('email'),
+            code: $this->validated('code'),
+        );
     }
 }

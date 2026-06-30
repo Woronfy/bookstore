@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Api\Auth;
 
+
 use Illuminate\Foundation\Http\FormRequest;
+use App\DTO\Auth\RegisterDTO;
 
 class RegisterRequest extends FormRequest
 {
@@ -22,18 +24,14 @@ class RegisterRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
+    public function toDTO(): RegisterDTO
     {
-        return [
-            'first_name.required' => trans('auth.registration.first_name.required'),
-            'last_name.required'  => trans('auth.registration.last_name.required'),
-            'nickname.required'   => trans('auth.registration.nickname.required'),
-            'nickname.unique'     => trans('auth.registration.nickname.unique'),
-            'email.required'      => trans('auth.registration.email.required'),
-            'email.email'         => trans('auth.registration.email.email'),
-            'email.unique'        => trans('auth.registration.email.unique'),
-            'password.required'   => trans('auth.registration.password.required'),
-            'password.min'        => trans('auth.registration.password.min'),
-        ];
+        return new RegisterDTO(
+            firstName: $this->validated('first_name'),
+            lastName: $this->validated('last_name'),
+            nickname: $this->validated('nickname'),
+            email: $this->validated('email'),
+            password: $this->validated('password'),
+        );
     }
 }

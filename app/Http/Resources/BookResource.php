@@ -21,6 +21,14 @@ class BookResource extends JsonResource
             'price' => $this->price,
             'old_price' => $this->old_price,
             'year' => $this->year,
+            'reviews_count' => $this->reviews_count ?? 0,
+            'average_rating' => $this->reviews_avg_rating ? round($this->reviews_avg_rating, 1) : null,
+            'cover' => $this->getFirstMediaUrl('images', 'thumb') ?: null,
+            'images' => $this->getMedia('images')->map(fn ($media) => [
+                'id' => $media->id,
+                'url' => $media->getUrl(),
+                'thumb' => $media->getUrl('thumb'),
+            ]),
         ];
     }
 }

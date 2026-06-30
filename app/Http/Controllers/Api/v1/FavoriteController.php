@@ -16,27 +16,30 @@ class FavoriteController extends Controller
     {
         $user = Auth::user();
 
-        $favorites = $user->favoriteBooks()->paginate($request->input('per_page', 15));
+        $favorites = $user->favoriteBooks()
+            ->withCount('reviews')
+            ->withAvg('reviews', 'rating')    
+            ->paginate($request->input('per_page', 15));
 
         return BookResource::collection($favorites);
     }
 
     public function store(AddFavoriteRequest $request)
     {
+        $dto = $request->toDTO();
         $user = Auth::user();
-        $bookId = $request->validated()['book_id'];
 
-        if ($user->favoriteBooks()->where('book_id', $bookId)->exists()) {
+        if ($user->favoriteBooks()->where('book_id', $dto->bookId)->exists()) {
             return response()->json([
                 'message' => 'Эта книга уже в избранном.'
             ], 409);
         }
 
-        $user->favoriteBooks()->attach($bookId);
+        $user->favoriteBooks()->attach($dto->bookId);
 
         return response()->json([
             'message' => 'Книга добавлена в избранное.',
-            'book_id' => $bookId
+            'book_id' => $dto->bookId
         ], 201);
     }
 

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Api\v1;
 
+use App\DTO\BookFilterDTO;
 use App\Http\Controllers\Controller;
 use App\Models\Book;
+use App\Http\Requests\Api\v1\BookFilterRequest;
 use App\Http\Resources\BookResource;
 use App\Repositories\Api\v1\BookRepository;
 use App\QueryModifiers\SortByPrice;
@@ -22,56 +24,52 @@ class BookController extends Controller
         $this->repository = $repository;
     }
 
-    public function index(Request $request)
+    public function index(BookFilterRequest $request)
     {
-        $query = $this->repository->getQuery();
+        $dto = $request->toDTO();
 
-        $modifiers = $this->buildModifiers($request);
+        $query = $this->repository->getQuery()->with('media');
+        $query->withCount('reviews')->withAvg('reviews', 'rating');
+        $modifiers = $this->buildModifiers($dto);
 
-       foreach ($modifiers as $modifier) {
+        foreach ($modifiers as $modifier) {
             $modifier->apply($query);
         }
 
-        $books = $query->paginate($request->input('per_page', 15));
+        $books = $query->paginate($dto->perPage);
 
         return BookResource::collection($books);
     }
 
     public function show($id)
     {
-        $book = Book::with(['authors', 'genres'])->findOrFail($id);
+        $book = Book::with(['authors', 'genres', 'media'])
+                ->withCount('reviews')
+                ->withAvg('reviews', 'rating')
+                ->findOrFail($id);
         return new BookResource($book);
     }
 
-    protected function buildModifiers(Request $request): array
+    protected function buildModifiers(BookFilterDTO $dto): array
     {
         $modifiers = [];
 
-        if ($request->has('sort_by') && $request->sort_by === 'price') {
-            $direction = $request->input('sort_direction', 'asc');
-            $modifiers[] = new SortByPrice($direction);
+        if ($dto->sortBy === 'price') {
+            $modifiers[] = new SortByPrice($dto->sortDirection);
+        } elseif ($dto->sortBy === 'created_at') {
+            $modifiers[] = new SortByDate($dto->sortDirection);
         }
 
-        if ($request->has('sort_by') && $request->sort_by === 'created_at') {
-            $direction = $request->input('sort_direction', 'asc');
-            $modifiers[] = new SortByDate($direction);
+        if ($dto->authorId) {
+            $modifiers[] = new FilterByAuthor($dto->authorId);
         }
 
-        if ($request->has('author_id') && $request->author_id) {
-            $modifiers[] = new FilterByAuthor((int) $request->author_id);
+        if ($dto->genreId) {
+            $modifiers[] = new FilterByGenre($dto->genreId);
         }
 
-        if ($request->has('genre_id') && $request->genre_id) {
-            $modifiers[] = new FilterByGenre((int) $request->genre_id);
-        }
-
-        $yearFrom = $request->input('year_from');
-        $yearTo = $request->input('year_to');
-        if ($yearFrom || $yearTo) {
-            $modifiers[] = new FilterByYearRange(
-                $yearFrom ? (int) $yearFrom : null,
-                $yearTo ? (int) $yearTo : null
-            );
+        if ($dto->yearFrom || $dto->yearTo) {
+            $modifiers[] = new FilterByYearRange($dto->yearFrom, $dto->yearTo);
         }
 
         return $modifiers;

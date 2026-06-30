@@ -4,6 +4,7 @@ namespace App\Http\Requests\Api\v1;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use App\DTO\Favorite\AddFavoriteDTO;
 
 class AddFavoriteRequest extends FormRequest
 {
@@ -27,11 +28,10 @@ class AddFavoriteRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
+    public function toDTO(): AddFavoriteDTO
     {
-        return [
-            'book_id.required' => 'Укажите ID книги.',
-            'book_id.exists'   => 'Книга с таким ID не найдена.',
-        ];
+        return new AddFavoriteDTO(
+            bookId: $this->validated('book_id'),
+        );
     }
 }

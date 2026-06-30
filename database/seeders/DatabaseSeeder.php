@@ -16,13 +16,13 @@ class DatabaseSeeder extends Seeder
 
         Genre::factory(20)->create();
 
-        $authors = Author::factory(20)->create();
+        $authors = Author::factory(20)->withAvatar()->create();
 
 
 
         $authors->each(function ($author) {
             $numBooks = rand(3, 7);
-            $books = Book::factory($numBooks)->create();
+            $books = Book::factory($numBooks)->withImages(rand(2, 5))->create();
 
            foreach ($books as $book) {
                 $randomAuthors = Author::inRandomOrder()->take(rand(1, 3))->pluck('id');

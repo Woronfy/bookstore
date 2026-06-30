@@ -11,7 +11,7 @@ class SortByDate implements QueryModifier
 
     public function __construct(string $direction = 'asc')
     {
-        $this->direction = $direction;
+        $this->direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
     }
 
     public function apply(Builder $query): void

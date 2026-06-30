@@ -9,31 +9,26 @@ use App\Http\Requests\Api\Auth\VerifyTwoFactorRequest;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Resources\AuthorResource;
 use App\Models\Author;
+use App\Services\AuthService;
 use App\Services\TwoFactorService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
     protected TwoFactorService $twoFactorService;
+    protected AuthService $authService;
 
-    public function __construct(TwoFactorService $twoFactorService)
+    public function __construct(TwoFactorService $twoFactorService, AuthService $authService)
     {
         $this->twoFactorService = $twoFactorService;
+        $this->authService = $authService;
     }
 
     public function register(RegisterRequest $request)
     {
-        $validated = $request->validated();
-
-        $author = Author::create([
-            'first_name' => $validated['first_name'],
-            'last_name'  => $validated['last_name'],
-            'nickname'   => $validated['nickname'],
-            'email'      => $validated['email'],
-            'password'   => Hash::make($validated['password']),
-        ]);
+        $dto = $request->toDTO();
+        $author = $this->authService->register($dto);
 
         return response()->json([
             'message' => trans('auth.registration.success'),
@@ -41,13 +36,13 @@ class AuthController extends Controller
         ], 201);
     }
 
-    public function login(LoginRequest $request)
+    public function sendCode(LoginRequest $request)
     {
-        $validated = $request->validated();
+        $dto = $request->toDTO();
 
-        $author = Author::where('email', $validated['email'])->first();
+        $author = $this->authService->getAuthorIfCredentialsValid($dto->email, $dto->password);
 
-        if (!$author || !Hash::check($validated['password'], $author->password)) {
+        if (!$author) {
             throw ValidationException::withMessages([
                 'email' => [trans('auth.login.failed')],
             ]);
@@ -63,9 +58,9 @@ class AuthController extends Controller
 
     public function verifyTwoFactor(VerifyTwoFactorRequest $request)
     {
-        $validated = $request->validated();
+        $dto = $request->toDTO();
 
-        $author = Author::where('email', $validated['email'])->first();
+        $author = Author::where('email', $dto->email)->first();
 
         if (!$author) {
             throw ValidationException::withMessages([
@@ -73,7 +68,7 @@ class AuthController extends Controller
             ]);
         }
 
-        $this->twoFactorService->verifyCode($author->email, $validated['code']);
+        $this->twoFactorService->verifyCode($author->email, $dto->code);
 
         $token = $author->createToken('auth_token')->plainTextToken;
 
@@ -96,25 +91,8 @@ class AuthController extends Controller
 
     public function updateProfile(UpdateProfileRequest $request)
     {
-        $author = $request->user();
-        $data = $request->validated();
-
-        if (isset($data['first_name'])) {
-            $author->first_name = $data['first_name'];
-        }
-        if (isset($data['last_name'])) {
-            $author->last_name = $data['last_name'];
-        }
-        if (isset($data['nickname'])) {
-            $author->nickname = $data['nickname'];
-        }
-        if (isset($data['email'])) {
-            $author->email = $data['email'];
-        }
-        if (isset($data['password'])) {
-            $author->password = Hash::make($data['password']);
-        }
-        $author->save();
+        $dto = $request->toDTO();
+        $author = $this->authService->updateProfile($request->user(), $dto);
 
         return response()->json([
             'message' => trans('auth.profile.updated'),
